@@ -30,7 +30,20 @@ const BrowseRFPs = () => {
     };
 
     useEffect(() => {
-        loadRfps(activeFilter, sortKey);
+        // Try to load data from URL first
+        const urlData = localStorageService.loadDataFromURL();
+        if (urlData) {
+            setRfps(urlData);
+            setLoading(false);
+        } else {
+            loadRfps(activeFilter, sortKey);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (rfps.length > 0) {
+            loadRfps(activeFilter, sortKey);
+        }
     }, [activeFilter, sortKey]);
 
     const handleSearchChange = (event) => {
@@ -158,56 +171,29 @@ const BrowseRFPs = () => {
         event.target.value = '';
     };
 
+    const handleShareData = () => {
+        try {
+            const shareableUrl = localStorageService.shareDataViaURL();
+            if (shareableUrl) {
+                navigator.clipboard.writeText(shareableUrl).then(() => {
+                    alert('Shareable link copied to clipboard! Share this link with others to show them your RFPs.');
+                }).catch(() => {
+                    alert('Shareable link: ' + shareableUrl);
+                });
+            } else {
+                alert('Failed to create shareable link');
+            }
+        } catch (error) {
+            console.error('Share failed:', error);
+            alert('Failed to create shareable link');
+        }
+    };
+
     const handleEditFormChange = (field, value) => {
         setEditForm(prev => ({
             ...prev,
             [field]: value
         }));
-    };
-
-    const testConnection = async () => {
-        try {
-            console.log('Testing connection...');
-            
-            // First test a simple GET request
-            console.log('Testing GET /health...');
-            const getResponse = await fetch('http://localhost:4000/health', {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                }
-            });
-            
-            console.log('GET response status:', getResponse.status);
-            console.log('GET response headers:', getResponse.headers);
-            
-            const getContentType = getResponse.headers.get('content-type');
-            if (!getContentType || !getContentType.includes('application/json')) {
-                const getResponseText = await getResponse.text();
-                console.log('GET response is not JSON:', getResponseText);
-                throw new Error(`GET request failed. Status: ${getResponse.status}, Content-Type: ${getContentType}. Response: ${getResponseText.substring(0, 200)}...`);
-            }
-            
-            const getData = await getResponse.json();
-            console.log('GET response data:', getData);
-            
-            // Now test the DELETE request
-            console.log('Testing DELETE /test-delete/123...');
-            const response = await fetch('http://localhost:4000/test-delete/123', {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json',
-                }
-            });
-            
-            console.log('Test response status:', response.status);
-            const data = await response.json();
-            console.log('Test response data:', data);
-            alert('Connection test successful! Check console for details.');
-        } catch (error) {
-            console.error('Test connection failed:', error);
-            alert(`Test connection failed: ${error.message}`);
-        }
     };
 
     const filteredRfps = rfps.filter(rfp => {
@@ -246,6 +232,9 @@ return (
                             style={{ display: 'none' }} 
                         />
                     </label>
+                    <button onClick={handleShareData} className="share-btn">
+                        <i className="fas fa-share-alt"></i> Share RFPs
+                    </button>
                 </div>
             </div>
 

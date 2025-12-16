@@ -241,5 +241,81 @@ class LocalStorageService {
   }
 }
 
+  // URL parameter data sharing
+  shareDataViaURL() {
+    try {
+      const rfps = this.getRFPs();
+      const compressedData = this.compressData(rfps);
+      const url = new URL(window.location);
+      url.searchParams.set('data', compressedData);
+      return url.toString();
+    } catch (error) {
+      console.error('Error creating shareable URL:', error);
+      return null;
+    }
+  }
+
+  loadDataFromURL() {
+    try {
+      const url = new URL(window.location);
+      const compressedData = url.searchParams.get('data');
+      
+      if (compressedData) {
+        const rfps = this.decompressData(compressedData);
+        if (rfps && Array.isArray(rfps)) {
+          localStorage.setItem(this.storageKey, JSON.stringify(rfps));
+          return rfps;
+        }
+      }
+      return null;
+    } catch (error) {
+      console.error('Error loading data from URL:', error);
+      return null;
+    }
+  }
+
+  compressData(data) {
+    try {
+      // Simple compression using base64 encoding
+      const jsonString = JSON.stringify(data);
+      return btoa(jsonString);
+    } catch (error) {
+      console.error('Error compressing data:', error);
+      return null;
+    }
+  }
+
+  decompressData(compressedData) {
+    try {
+      const jsonString = atob(compressedData);
+      return JSON.parse(jsonString);
+    } catch (error) {
+      console.error('Error decompressing data:', error);
+      return null;
+    }
+  }
+
+  // Session storage fallback for larger data
+  saveToSessionStorage(data) {
+    try {
+      sessionStorage.setItem('rfp_shared_data', JSON.stringify(data));
+      return true;
+    } catch (error) {
+      console.error('Error saving to session storage:', error);
+      return false;
+    }
+  }
+
+  loadFromSessionStorage() {
+    try {
+      const data = sessionStorage.getItem('rfp_shared_data');
+      return data ? JSON.parse(data) : null;
+    } catch (error) {
+      console.error('Error loading from session storage:', error);
+      return null;
+    }
+  }
+}
+
 const localStorageService = new LocalStorageService();
 export default localStorageService;
