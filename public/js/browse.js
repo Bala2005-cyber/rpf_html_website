@@ -103,19 +103,32 @@ function openPdfInModal(url, title) {
 function openPdfInNewTab(url) {
   console.log('Opening PDF in new tab:', url);
   
-  // Ensure we have a proper URL
-  const fullUrl = url.startsWith('./') ? url : url.startsWith('/') ? url : `./${url}`;
+  // Get the current base URL for proper resolution
+  const baseUrl = window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, '/');
+  const fullUrl = url.startsWith('http') ? url : baseUrl + url;
   
-  // Try to open in new tab first
-  const w = window.open(fullUrl, '_blank', 'noopener,noreferrer');
+  console.log('Full PDF URL:', fullUrl);
   
-  if (!w) {
-    // If popup blocked, try direct navigation
-    console.log('Popup blocked, trying direct navigation to:', fullUrl);
-    window.location.href = fullUrl;
-  } else {
-    console.log('PDF opened in new tab successfully');
-  }
+  // Create a link element to ensure proper content type handling
+  const link = document.createElement('a');
+  link.href = fullUrl;
+  link.target = '_blank';
+  link.rel = 'noopener noreferrer';
+  link.download = ''; // This hints that it's a download, not navigation
+  
+  // Try to trigger download/open
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  
+  // Fallback if the above doesn't work
+  setTimeout(() => {
+    const w = window.open(fullUrl, '_blank', 'noopener,noreferrer');
+    if (!w) {
+      console.log('Popup blocked, trying direct navigation');
+      window.location.href = fullUrl;
+    }
+  }, 100);
 }
 
 function closePdfModal() {

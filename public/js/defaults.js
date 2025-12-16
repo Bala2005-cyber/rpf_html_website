@@ -8,7 +8,7 @@ export function calculateDurationFromDate(deadlineDate) {
 }
 
 export function getDefaultRfps() {
-  const pdfPath = './REQUEST FOR PROPOSAL (RFP) (2).pdf';
+  const pdfPath = 'REQUEST FOR PROPOSAL (RFP) (2).pdf';
 
   const d1 = '2026-04-30';
   const d2 = '2026-06-15';
