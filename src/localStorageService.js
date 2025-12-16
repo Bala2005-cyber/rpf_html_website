@@ -118,6 +118,78 @@ class LocalStorageService {
     }
   }
 
+  // Export all RFP data as JSON
+  exportRFPData() {
+    try {
+      const rfps = this.getRFPs();
+      const exportData = {
+        version: '1.0',
+        exportDate: new Date().toISOString(),
+        rfps: rfps
+      };
+      
+      return JSON.stringify(exportData, null, 2);
+    } catch (error) {
+      console.error('Error exporting RFP data:', error);
+      throw error;
+    }
+  }
+
+  // Import RFP data from JSON
+  importRFPData(jsonData, mergeMode = false) {
+    try {
+      const importData = JSON.parse(jsonData);
+      
+      if (!importData.rfps || !Array.isArray(importData.rfps)) {
+        throw new Error('Invalid import data format');
+      }
+
+      let currentRfps = mergeMode ? this.getRFPs() : [];
+      
+      if (mergeMode) {
+        // Merge mode: add new RFPs, update existing ones
+        importData.rfps.forEach(importedRfp => {
+          const existingIndex = currentRfps.findIndex(rfp => rfp._id === importedRfp._id);
+          if (existingIndex !== -1) {
+            currentRfps[existingIndex] = importedRfp;
+          } else {
+            currentRfps.push(importedRfp);
+          }
+        });
+      } else {
+        // Replace mode: replace all RFPs
+        currentRfps = importData.rfps;
+      }
+      
+      localStorage.setItem(this.storageKey, JSON.stringify(currentRfps));
+      return currentRfps;
+    } catch (error) {
+      console.error('Error importing RFP data:', error);
+      throw error;
+    }
+  }
+
+  // Download RFP data as JSON file
+  downloadRFPData(filename = 'rfp_data.json') {
+    try {
+      const jsonData = this.exportRFPData();
+      const blob = new Blob([jsonData], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading RFP data:', error);
+      throw error;
+    }
+  }
+
   // Delete RFP from local storage
   deleteRFP(rfpId) {
     try {
@@ -169,4 +241,5 @@ class LocalStorageService {
   }
 }
 
-export default new LocalStorageService();
+const localStorageService = new LocalStorageService();
+export default localStorageService;

@@ -127,6 +127,37 @@ const BrowseRFPs = () => {
         }
     };
 
+    const handleExportData = () => {
+        try {
+            localStorageService.downloadRFPData('rfp_data.json');
+        } catch (error) {
+            console.error('Export failed:', error);
+            alert('Failed to export data');
+        }
+    };
+
+    const handleImportData = (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const jsonData = e.target.result;
+                const importedRfps = localStorageService.importRFPData(jsonData, true);
+                loadRfps(); // Reload the data
+                alert(`Successfully imported ${importedRfps.length} RFPs`);
+            } catch (error) {
+                console.error('Import failed:', error);
+                alert('Failed to import data. Please check the file format.');
+            }
+        };
+        reader.readAsText(file);
+        
+        // Reset the file input
+        event.target.value = '';
+    };
+
     const handleEditFormChange = (field, value) => {
         setEditForm(prev => ({
             ...prev,
@@ -180,166 +211,181 @@ const BrowseRFPs = () => {
     };
 
     const filteredRfps = rfps.filter(rfp => {
-        const searchTermLower = searchTerm.toLowerCase();
-        const matchesSearch = searchTerm === '' ||
-                              rfp.projectName.toLowerCase().includes(searchTermLower) ||
-                              rfp.productSummary.toLowerCase().includes(searchTermLower) ||
-                              rfp.status.toLowerCase().includes(searchTermLower);
-        return matchesSearch;
-    });
+    const searchTermLower = searchTerm.toLowerCase();
+    const matchesSearch = searchTerm === '' ||
+                          rfp.projectName.toLowerCase().includes(searchTermLower) ||
+                          rfp.productSummary.toLowerCase().includes(searchTermLower) ||
+                          rfp.status.toLowerCase().includes(searchTermLower) ||
+                          rfp.deadline.toLowerCase().includes(searchTermLower);
+    return matchesSearch;
+});
 
-    return (
-        <div className="browse-rfp-app">
-            <main className="browse-main">
-                <div className="filter-controls">
-                    <div className="search-bar">
-                        <i className="fas fa-search"></i>
-                        <input type="text" placeholder={t.searchPlaceholder} value={searchTerm} onChange={handleSearchChange} />
-                    </div>
-                    <div className="filter-tabs">
-                        <button onClick={() => setActiveFilter('recent')} className={activeFilter === 'recent' ? 'active' : ''}>{t.recentlyUploaded}</button>
-                        <button onClick={() => setActiveFilter('completed')} className={activeFilter === 'completed' ? 'active' : ''}>{t.deadlineCompleted}</button>
-                        <button onClick={() => setActiveFilter('extended')} className={activeFilter === 'extended' ? 'active' : ''}>{t.extendedRFPs}</button>
-                    </div>
+return (
+    <div className="browse-rfp-app">
+        <main className="browse-main">
+            <div className="filter-controls">
+                <div className="search-bar">
+                    <i className="fas fa-search"></i>
+                    <input type="text" placeholder={t.searchPlaceholder} value={searchTerm} onChange={handleSearchChange} />
                 </div>
+                <div className="filter-tabs">
+                    <button onClick={() => setActiveFilter('recent')} className={activeFilter === 'recent' ? 'active' : ''}>{t.recentlyUploaded}</button>
+                    <button onClick={() => setActiveFilter('completed')} className={activeFilter === 'completed' ? 'active' : ''}>{t.deadlineCompleted}</button>
+                    <button onClick={() => setActiveFilter('extended')} className={activeFilter === 'extended' ? 'active' : ''}>{t.extendedRFPs}</button>
+                </div>
+                <div className="data-controls">
+                    <button onClick={handleExportData} className="export-btn">
+                        <i className="fas fa-download"></i> Export Data
+                    </button>
+                    <label className="import-btn">
+                        <i className="fas fa-upload"></i> Import Data
+                        <input 
+                            type="file" 
+                            accept=".json" 
+                            onChange={handleImportData} 
+                            style={{ display: 'none' }} 
+                        />
+                    </label>
+                </div>
+            </div>
 
-                <div className="rfp-grid">
-                    {loading && <p>Loading...</p>}
-                    {error && <p>Error: {error}</p>}
-                    {!loading && !error && filteredRfps.map(rfp => (
-                        <div key={rfp._id} className={`rfp-card ${rfp.status.toLowerCase()}`}>
-                            <div className="card-header">
+            <div className="rfp-grid">
+                {loading && <p>Loading...</p>}
+                {error && <p>Error: {error}</p>}
+                {!loading && !error && filteredRfps.map(rfp => (
+                    <div key={rfp._id} className={`rfp-card ${rfp.status.toLowerCase()}`}>
+                        <div className="card-header">
+                            <button 
+                                onClick={() => handleEditRfp(rfp)}
+                                className="edit-btn-header"
+                            >
+                                Edit
+                            </button>
+                            <span>{t.projectName}</span>
+                            <div className="header-right">
+                                <span className={`status-badge ${rfp.status.toLowerCase()}`}>{rfp.status}</span>
                                 <button 
-                                    onClick={() => handleEditRfp(rfp)}
-                                    className="edit-btn-header"
+                                    onClick={() => handleDeleteRfp(rfp._id)}
+                                    className="delete-btn-header"
                                 >
-                                    Edit
+                                    Delete
                                 </button>
-                                <span>{t.projectName}</span>
-                                <div className="header-right">
-                                    <span className={`status-badge ${rfp.status.toLowerCase()}`}>{rfp.status}</span>
-                                    <button 
-                                        onClick={() => handleDeleteRfp(rfp._id)}
-                                        className="delete-btn-header"
-                                    >
-                                        Delete
-                                    </button>
-                                </div>
                             </div>
-                            
-                            {editingRfp === rfp._id ? (
-                                <div className="edit-mode">
+                        </div>
+                        
+                        {editingRfp === rfp._id ? (
+                            <div className="edit-mode">
+                                <div className="form-group">
+                                    <label>Project Name:</label>
+                                    <input
+                                        type="text"
+                                        value={editForm.projectName}
+                                        onChange={(e) => handleEditFormChange('projectName', e.target.value)}
+                                        className="edit-input"
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label>Product Summary:</label>
+                                    <textarea
+                                        value={editForm.productSummary}
+                                        onChange={(e) => handleEditFormChange('productSummary', e.target.value)}
+                                        className="edit-textarea"
+                                        rows="3"
+                                    />
+                                </div>
+                                <div className="form-row">
                                     <div className="form-group">
-                                        <label>Project Name:</label>
+                                        <label>Deadline:</label>
                                         <input
-                                            type="text"
-                                            value={editForm.projectName}
-                                            onChange={(e) => handleEditFormChange('projectName', e.target.value)}
+                                            type="date"
+                                            value={editForm.deadline}
+                                            onChange={(e) => handleEditFormChange('deadline', e.target.value)}
                                             className="edit-input"
                                         />
                                     </div>
                                     <div className="form-group">
-                                        <label>Product Summary:</label>
-                                        <textarea
-                                            value={editForm.productSummary}
-                                            onChange={(e) => handleEditFormChange('productSummary', e.target.value)}
-                                            className="edit-textarea"
-                                            rows="3"
+                                        <label>Duration (days):</label>
+                                        <input
+                                            type="number"
+                                            value={editForm.durationDays}
+                                            onChange={(e) => handleEditFormChange('durationDays', e.target.value)}
+                                            className="edit-input"
+                                            min="1"
                                         />
                                     </div>
-                                    <div className="form-row">
-                                        <div className="form-group">
-                                            <label>Deadline:</label>
-                                            <input
-                                                type="date"
-                                                value={editForm.deadline}
-                                                onChange={(e) => handleEditFormChange('deadline', e.target.value)}
-                                                className="edit-input"
-                                            />
-                                        </div>
-                                        <div className="form-group">
-                                            <label>Duration (days):</label>
-                                            <input
-                                                type="number"
-                                                value={editForm.durationDays}
-                                                onChange={(e) => handleEditFormChange('durationDays', e.target.value)}
-                                                className="edit-input"
-                                                min="1"
-                                            />
-                                        </div>
-                                        <div className="form-group">
-                                            <label>Status:</label>
-                                            <select
-                                                value={editForm.status}
-                                                onChange={(e) => handleEditFormChange('status', e.target.value)}
-                                                className="edit-select"
-                                            >
-                                                <option value="open">Open</option>
-                                                <option value="extended">Extended</option>
-                                                <option value="closed">Closed</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div className="edit-actions">
-                                        <button
-                                            onClick={() => handleSaveRfp(rfp._id)}
-                                            className="save-btn"
+                                    <div className="form-group">
+                                        <label>Status:</label>
+                                        <select
+                                            value={editForm.status}
+                                            onChange={(e) => handleEditFormChange('status', e.target.value)}
+                                            className="edit-select"
                                         >
-                                            Save
-                                        </button>
-                                        <button
-                                            onClick={handleCancelEdit}
-                                            className="cancel-btn"
-                                        >
-                                            Cancel
-                                        </button>
+                                            <option value="open">Open</option>
+                                            <option value="extended">Extended</option>
+                                            <option value="closed">Closed</option>
+                                        </select>
                                     </div>
                                 </div>
-                            ) : (
-                                <>
-                                    <h2>{rfp.projectName}</h2>
-                                    <div className="summary">
-                                        <h3>{t.productRequirementSummary}</h3>
-                                        <p>{rfp.productSummary}</p>
+                                <div className="edit-actions">
+                                    <button
+                                        onClick={() => handleSaveRfp(rfp._id)}
+                                        className="save-btn"
+                                    >
+                                        Save
+                                    </button>
+                                    <button
+                                        onClick={handleCancelEdit}
+                                        className="cancel-btn"
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                            </div>
+                        ) : (
+                            <>
+                                <h2>{rfp.projectName}</h2>
+                                <div className="summary">
+                                    <h3>{t.productRequirementSummary}</h3>
+                                    <p>{rfp.productSummary}</p>
+                                </div>
+                                <div className="key-info">
+                                    <h3>{t.keyInfo}</h3>
+                                    <div className="info-grid">
+                                        <div><span>Deadline: {new Date(rfp.deadline).toLocaleDateString('en-US', { 
+                                            month: 'short', 
+                                            day: 'numeric', 
+                                            year: 'numeric' 
+                                        })}</span></div>
+                                        <div><span>{t.projectDuration}:</span><strong>{rfp.durationDays} days</strong></div>
                                     </div>
-                                    <div className="key-info">
-                                        <h3>{t.keyInfo}</h3>
-                                        <div className="info-grid">
-                                            <div><span>Deadline: {new Date(rfp.deadline).toLocaleDateString('en-US', { 
-                                                month: 'short', 
-                                                day: 'numeric', 
-                                                year: 'numeric' 
-                                            })}</span></div>
-                                            <div><span>{t.projectDuration}:</span><strong>{rfp.durationDays} days</strong></div>
-                                        </div>
+                                </div>
+                                <div className="card-actions">
+                                    <div className="document-link">
+                                        <span className="link-label">{t.viewDocument}:</span>
+                                        {rfp.fileData ? (
+                                            <div className="document-actions">
+                                                <button 
+                                                    onClick={() => handleViewDocument(rfp)}
+                                                    className="document-link-url"
+                                                    style={{ cursor: 'pointer' }}
+                                                >
+                                                    {rfp.fileName || 'Document Link'}
+                                                </button>
+                                                <button 
+                                                    onClick={() => handleDownloadDocument(rfp)}
+                                                    className="download-btn-small"
+                                                >
+                                                    Download
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <span className="no-file">No file available</span>
+                                        )}
                                     </div>
-                                    <div className="card-actions">
-                                        <div className="document-link">
-                                            <span className="link-label">{t.viewDocument}:</span>
-                                            {rfp.fileData ? (
-                                                <div className="document-actions">
-                                                    <a 
-                                                        onClick={() => handleViewDocument(rfp)}
-                                                        className="document-link-url"
-                                                        style={{ cursor: 'pointer' }}
-                                                    >
-                                                        {rfp.fileName || 'Document Link'}
-                                                    </a>
-                                                    <button 
-                                                        onClick={() => handleDownloadDocument(rfp)}
-                                                        className="download-btn-small"
-                                                    >
-                                                        Download
-                                                    </button>
-                                                </div>
-                                            ) : (
-                                                <span className="no-file">No file available</span>
-                                            )}
-                                        </div>
-                                    </div>
-                                </>
-                            )}
-                        </div>
+                                </div>
+                            </>
+                        )}
+                    </div>
                     ))}
                 </div>
 
