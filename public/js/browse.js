@@ -101,10 +101,20 @@ function openPdfInModal(url, title) {
 }
 
 function openPdfInNewTab(url) {
-  const w = window.open(url, '_blank', 'noopener,noreferrer');
+  console.log('Opening PDF in new tab:', url);
+  
+  // Ensure we have a proper URL
+  const fullUrl = url.startsWith('./') ? url : url.startsWith('/') ? url : `./${url}`;
+  
+  // Try to open in new tab first
+  const w = window.open(fullUrl, '_blank', 'noopener,noreferrer');
+  
   if (!w) {
     // If popup blocked, try direct navigation
-    window.location.href = url;
+    console.log('Popup blocked, trying direct navigation to:', fullUrl);
+    window.location.href = fullUrl;
+  } else {
+    console.log('PDF opened in new tab successfully');
   }
 }
 
