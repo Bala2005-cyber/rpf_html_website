@@ -17,32 +17,78 @@ function getModalEls() {
 function openPdfInModal(url, title) {
   const { modal, title: titleEl, frame } = getModalEls();
   if (!modal || !frame || !titleEl) {
-    const w = window.open(url, '_blank', 'noopener,noreferrer');
-    if (!w) window.location.href = url;
+    openPdfInNewTab(url);
     return;
   }
 
   titleEl.textContent = title || 'Document';
-  frame.src = url;
-  modal.classList.add('is-open');
-  modal.setAttribute('aria-hidden', 'false');
+  
+  // Try multiple PDF viewing methods for hosted environments
+  const viewerUrls = [
+    url, // Direct PDF
+    `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`, // Google Docs Viewer
+    `https://r.jina.ai/http://${url.replace(/^https?:\/\//, '')}` // Jina AI fallback
+  ];
+  
+  let attemptIndex = 0;
+  
+  function tryNextViewer() {
+    if (attemptIndex >= viewerUrls.length) {
+      console.log('All PDF viewers failed, opening in new tab');
+      openPdfInNewTab(url);
+      closePdfModal();
+      return;
+    }
+    
+    const viewerUrl = viewerUrls[attemptIndex];
+    console.log(`Trying PDF viewer ${attemptIndex + 1}: ${viewerUrl}`);
+    
+    frame.src = viewerUrl;
+    modal.classList.add('is-open');
+    modal.setAttribute('aria-hidden', 'false');
 
-  // Fallback for static hosts that block iframe PDF loading
-  const timeout = setTimeout(() => {
-    const w = window.open(url, '_blank', 'noopener,noreferrer');
-    if (!w) window.location.href = url;
-    closePdfModal();
-  }, 4000);
+    // Enhanced fallback for hosted environments
+    let loadTimeout = setTimeout(() => {
+      console.log(`PDF viewer ${attemptIndex + 1} timeout, trying next`);
+      attemptIndex++;
+      tryNextViewer();
+    }, 3000);
 
-  frame.onload = () => {
-    clearTimeout(timeout);
-  };
-  frame.onerror = () => {
-    clearTimeout(timeout);
-    const w = window.open(url, '_blank', 'noopener,noreferrer');
-    if (!w) window.location.href = url;
-    closePdfModal();
-  };
+    frame.onload = () => {
+      clearTimeout(loadTimeout);
+      // Additional check: verify PDF actually loaded
+      try {
+        const iframeDoc = frame.contentDocument || frame.contentWindow.document;
+        if (!iframeDoc || iframeDoc.title.includes('404') || iframeDoc.title.includes('Error')) {
+          console.log(`PDF viewer ${attemptIndex + 1} failed, trying next`);
+          attemptIndex++;
+          tryNextViewer();
+        } else {
+          console.log(`PDF viewer ${attemptIndex + 1} loaded successfully`);
+        }
+      } catch (e) {
+        // Cross-origin error - likely PDF loaded successfully
+        console.log(`PDF viewer ${attemptIndex + 1} loaded (cross-origin check passed)`);
+      }
+    };
+
+    frame.onerror = () => {
+      clearTimeout(loadTimeout);
+      console.log(`PDF viewer ${attemptIndex + 1} error, trying next`);
+      attemptIndex++;
+      tryNextViewer();
+    };
+  }
+  
+  tryNextViewer();
+}
+
+function openPdfInNewTab(url) {
+  const w = window.open(url, '_blank', 'noopener,noreferrer');
+  if (!w) {
+    // If popup blocked, try direct navigation
+    window.location.href = url;
+  }
 }
 
 function closePdfModal() {
