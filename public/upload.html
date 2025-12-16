@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Upload RFP - Delhi Metro Project</title>
+    <link rel="icon" href="/favicon.ico" />
+    <link rel="stylesheet" href="/theme.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <div class="brand-container">
+        <img src="/logo.png" alt="Delhi Metro Project Logo" class="logo" />
+        <span class="brand-name">Delhi Metro Project</span>
+      </div>
+      <nav class="main-nav">
+        <a href="index.html" data-nav>Home</a>
+        <a href="upload.html" data-nav>Upload RFP</a>
+        <a href="browse.html" data-nav>Browse RFPs</a>
+      </nav>
+    </header>
+
+    <div class="upload-rfp-app">
+      <div class="upload-card">
+        <div class="card-heading">
+          <h1>Upload RFP</h1>
+          <p>Submit the required project details and upload your RFP document</p>
+        </div>
+
+        <div id="statusMsg"></div>
+
+        <form class="upload-form" id="uploadForm">
+          <div class="form-grid">
+            <div class="left-column">
+              <div class="field">
+                <label class="field-label" for="projectName">Project Name</label>
+                <div class="input-shell">
+                  <span class="input-icon">&#128195;</span>
+                  <input id="projectName" type="text" required />
+                </div>
+              </div>
+
+              <div class="field">
+                <label class="field-label" for="deadline">Deadline Date</label>
+                <div class="input-shell">
+                  <span class="input-icon">&#128197;</span>
+                  <input id="deadline" type="date" required />
+                </div>
+              </div>
+
+              <div class="field">
+                <label class="field-label" for="durationDays">Project Duration (in days)</label>
+                <div class="input-shell">
+                  <span class="input-icon">&#9200;</span>
+                  <input id="durationDays" type="number" value="0" readonly class="readonly-input" />
+                </div>
+              </div>
+
+              <div class="field">
+                <label class="field-label" for="status">Status</label>
+                <div class="input-shell">
+                  <span class="status-dot"></span>
+                  <select id="status">
+                    <option value="open">Open</option>
+                    <option value="extended">Extended</option>
+                    <option value="closed">Closed</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="right-column">
+              <div class="field">
+                <label class="field-label" for="productSummary">Product Requirement Summary</label>
+                <div class="textarea-shell">
+                  <textarea id="productSummary" maxLength="100" required></textarea>
+                  <span class="word-limit">100 words</span>
+                </div>
+              </div>
+
+              <div class="field">
+                <label class="field-label" for="file">Upload RFP Document (PDF)</label>
+                <div class="drop-zone" id="dropZone">
+                  <input id="file" type="file" accept="application/pdf,.pdf" style="display:none" required />
+                  <label for="file" class="drop-zone-label">
+                    <div class="doc-icons">
+                      <span class="pdf">PDF</span>
+                      <span class="doc">DOC</span>
+                    </div>
+                    <p>Drag & drop to hover</p>
+                  </label>
+                </div>
+                <div id="filePill" class="uploading-pill" style="display:none"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="primary">Save & Upload &#128228;</button>
+            <button type="reset" class="ghost">Reset Form</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script type="module" src="js/upload.js"></script>
+    <script type="module">
+      // Force navigation to work correctly
+      document.querySelectorAll('[data-nav]').forEach(link => {
+        link.addEventListener('click', (e) => {
+          e.preventDefault();
+          window.location.href = link.getAttribute('href');
+        });
+      });
+    </script>
+  </body>
+</html>
