@@ -239,7 +239,6 @@ class LocalStorageService {
       rfp.status.toLowerCase().includes(lowerSearchTerm)
     );
   }
-}
 
   // URL parameter data sharing
   shareDataViaURL() {
